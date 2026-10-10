@@ -1,0 +1,42 @@
+name: ARC smoke test
+
+on:
+  pull_request:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  smoketest:
+    runs-on: arc-runner-set
+    steps:
+      - run: |
+          echo "Runner: $RUNNER_NAME"
+          uname -a
+
+      - run: |
+          ls -la /etc/buildkit/tls
+          test -r /etc/buildkit/tls/ca.crt
+          test -r /etc/buildkit/tls/tls.crt
+          test -r /etc/buildkit/tls/tls.key
+
+      - run: docker info
+
+  publish:
+    name: Build and publish selftest image
+    runs-on: arc-runner-set
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Publish Docker image
+        uses: pvarki/config-ci-library/.github/actions/publish-image@main
+        with:
+          product: acrsmoketest
+          component: tool
+          dockerhub-username: ${{ vars.DOCKERHUB_USERNAME }}
+          dockerhub-token: ${{ secrets.DOCKERHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          acr-repo: ${{ vars.ACR_REPO }}
+          acr-username: ${{ vars.ACR_USERNAME }}
+          acr-token: ${{ secrets.ACR_TOKEN }}
